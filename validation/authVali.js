@@ -8,3 +8,9 @@ export const authValidate = Joi.object({
   password: Joi.string().required(),
   mobile: Joi.string().required().max(11)
 })
+
+export const loginValidate = Joi.object({
+  email: Joi.string().required()
+    .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] }}),
+  password: Joi.string().required()
+})
