@@ -29,7 +29,24 @@ var userSchema = new mongoose.Schema({
     type: String,
     default: 'user',
   },
-});
+  card: {
+    type: Array,
+    default: []
+  },
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  address: {
+    type: String,
+  },
+  refreshToken: {
+    type: String,
+  },
+  wishlist: [
+    { type: mongoose.Schema.Types.ObjectId, ref: 'Product'}
+  ]
+}, { timestamps: true });
 
 //trước khi lưu dữ liệu thì hash password
 userSchema.pre("save", async function (next) {

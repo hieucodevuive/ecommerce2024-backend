@@ -2,8 +2,11 @@ import { errorHandler } from '../utils/errorHandle.js'
 import { authValidate, loginValidate } from '../validation/authVali.js'
 // import bcryptjs from 'bcryptjs'
 import User from '../models/userModel.js'
+import { validateMongoDbId } from '../utils/validateMongodbId.js'
 import { findUserByEmail, findUserById, deleteUserById } from '../services/userService.js'
 import { generateToken } from '../config/jwtToken.js'
+import { generateRefreshToken } from '../config/refreshToken.js'
+import jwt from 'jsonwebtoken'
 
 export const createUser = async(req, res, next) => {
   try {
@@ -42,6 +45,18 @@ export const loginUser = async(req, res, next) => {
     if (!findUser) return next(errorHandler(500, 'User not found'))
     //Nếu tồn tại user và mật khẩu chính xác, isPasswordMatched là một method được tạo ra trong userScheemer
     if (findUser &&  await findUser.isPasswordMatched(password)) {
+      //Tọa ra refreshToken rồi cập nhật trong db
+      const refreshToken = await generateRefreshToken(findUser?._id)
+      const updateUser = await User.findByIdAndUpdate(findUser?._id, {
+        refreshToken: refreshToken
+      }, { new: true })
+
+      //trả về refreshToken lên cookie
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        maxAge: 71 * 60 * 60 *  1000
+      })
+
       res.status(200).json({ 
         status: 'success',
         user: {
@@ -50,6 +65,7 @@ export const loginUser = async(req, res, next) => {
           lastname: findUser?.lastname,
           email: findUser?.email,
           mobile: findUser?.mobile,
+          //tạo gửi lên client 1 cái token
           token: generateToken(findUser?._id)
         } 
       })
@@ -59,6 +75,51 @@ export const loginUser = async(req, res, next) => {
   } catch (error) {
    next(error) 
   }
+}
+
+// handle refresh token
+export const handleRefreshToken = async (req, res, next) => {
+  const cookie = req.cookies
+  if (!cookie?.refreshToken) return next(errorHandler(500, 'No refresh token'))
+  // Lấy refresh token từ cookie
+  const refreshToken = cookie.refreshToken
+  //Tìm kiếm user dựa trên refresh token
+  const user = await User.findOne({refreshToken})
+  if (!user) return next(errorHandler(500, 'No Refresh token matched'))
+  //Giải mã cái rf token nhận được useId
+  jwt.verify(refreshToken, process.env.SECRET_KEY, (err, decoded) => {
+    //Nếu user id === id được giải mã thì lại tạo ra access token dựa trên user id
+    if (err || user.id !== decoded.id) {
+      return next(errorHandler(500, 'There is something wrong with refresh token'))
+    }
+    const accessToken = generateToken(user?._id)
+    res.json({ accessToken })
+  })
+}
+
+export const logout = async(req, res, next) => {
+  const cookie = req.cookies
+  if (!cookie?.refreshToken) return next(errorHandler(500, 'No refresh token'))
+  const refreshToken = cookie.refreshToken
+  const user = await User.findOne({refreshToken})
+  if (!user) {
+    res.clearCookie('refreshToken'), {
+      httpOnly: true,
+      secure: true
+    }
+    return res.status(200).json({ status: 'success', message: 'No user login' })
+  }
+  
+  const updateUser = await User.findOneAndUpdate({refreshToken}, {
+    refreshToken: ''
+  }, {new: true});
+  console.log('🚀 ~ logout ~ updateUser:', updateUser)
+  
+  res.clearCookie('refreshToken'), {
+    httpOnly: true,
+    secure: true
+  }
+  return res.status(200).json({ status: 'success', message: 'User loged out' })
 }
 
 export const getAllUser = async(req, res, next) => {
@@ -78,8 +139,9 @@ export const getAllUser = async(req, res, next) => {
 }
 
 export const getUser = async(req, res, next) => {
+  const userId = req.params.userId
+  validateMongoDbId(userId)
   try {
-    const userId = req.params.userId
     const user = await findUserById(userId)
     if (user) {
       const { password, ...userWithouthPassword } = user._doc
@@ -92,13 +154,71 @@ export const getUser = async(req, res, next) => {
 }
 
 export const deleteUser = async(req, res, next) => {
+  const userId = req.params.userId
+  validateMongoDbId(userId)
   try {
-    const userId = req.params.userId
     const result = await deleteUserById(userId)
     res.status(200).json({
       status: 'success',
       message: result
     })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const updateUser = async(req, res, next) => {
+  const { _id } = req.user
+  validateMongoDbId(_id)
+  try {
+    const updateUser = await User.findByIdAndUpdate(_id , {
+      firstname: req?.body?.firstname,
+      lastname: req?.body?.lastname,
+      mobile: req?.body?.mobile
+    }, 
+    {
+      new: true
+    })
+    res.status(200).json({
+      status: 'success',
+      user: updateUser
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const blockUser = async(req, res, next) => {
+  const userId = req.params.userId
+  validateMongoDbId(userId)
+  try {
+    if (userId) {
+      const blockUser = await User.findByIdAndUpdate(userId, {
+        isBlocked: true
+      }, { new: true})
+
+      return res.status(200).json({ status: 'success', message: 'Blocked successfully'})
+    } else {
+      return next(errorHandler(500, 'User not found'))
+    }
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const unblockUser = async(req, res, next) => {
+  const userId = req.params.userId
+  validateMongoDbId(userId)
+  try {
+    if (userId) {
+      const unblockUser = await User.findByIdAndUpdate(userId, {
+        isBlocked: false
+      }, { new: true})
+
+      return res.status(200).json({ status: 'success', message: 'Unlocked successfully'})
+    } else {
+      return next(errorHandler(500, 'User not found'))
+    }
   } catch (error) {
     next(error)
   }
