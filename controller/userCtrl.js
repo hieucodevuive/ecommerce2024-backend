@@ -8,6 +8,7 @@ import { generateToken } from '../config/jwtToken.js'
 import { generateRefreshToken } from '../config/refreshToken.js'
 import jwt from 'jsonwebtoken'
 import { sendEmail } from './emailCtrl.js'
+import crypto from 'crypto'
 
 export const createUser = async (req, res, next) => {
   try {
@@ -255,13 +256,41 @@ export const forgotPasswordToken = async (req, res, next) => {
     const resetURL = `Hi, Please follow this link to reset Your Password. This link is valid till 10 minutes from now. <a href='http://localhost:3017/api/user/reset-password/${token}'>Click Here</>`
     const data = {
       to: email,
-      text: "Hey User",
-      subject: "Forgot Password Link",
+      text: 'Hey User',
+      subject: 'Forgot Password Link',
       htm: resetURL,
     }
     sendEmail(data)
-    console.log(data);
     res.json({status: 'success', forgotPasswordToken: token})
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const resetPassword = async(req, res, next) => {
+  
+  try {
+    const { password } = req.body
+    const { token } = req.params
+
+    const hashToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex')
+
+    const user = await User.findOne({
+      passwordResetToken: hashToken,
+      passwordResetExpires: { $gt: Date.now() }
+    })
+
+    if (!user) {
+      next(errorHandler(400, 'Token Expired, please try again'))
+    }
+    user.password = password
+    user.passwordResetToken = undefined
+    user.passwordResetExpires = undefined
+    await user.save()
+    res.status(200).json({ status: 'success', message: 'Password was changed' })
   } catch (error) {
     next(error)
   }
