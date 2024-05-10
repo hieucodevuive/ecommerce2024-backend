@@ -10,6 +10,8 @@ import {
   unblockUser,
   handleRefreshToken,
   logout,
+  updatePassword,
+  forgotPasswordToken
 } from '../controller/userCtrl.js'
 import { authMiddleware, isAdmin } from '../middlewares/authMiddleware.js'
 
@@ -25,5 +27,7 @@ router.delete('/delete/:userId',authMiddleware, deleteUser)
 router.put('/update', authMiddleware, updateUser)
 router.put('/block-user/:userId', authMiddleware, isAdmin, blockUser)
 router.put('/unblock-user/:userId', authMiddleware, isAdmin, unblockUser)
+router.put('/change-password', authMiddleware, updatePassword)
+router.post('/forgot-password-token', forgotPasswordToken)
 
 export default router
