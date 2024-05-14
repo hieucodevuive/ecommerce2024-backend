@@ -7,6 +7,9 @@ import { middlewareErrorHandler } from './middlewares/middlewareErrorHandler.js'
 import authRouter from './routes/authRoute.js'
 import productRouter from './routes/productRoute.js'
 import blogRouter from './routes/blogRoute.js'
+import pcategoryRouter from './routes/productCategoryRoute.js'
+import bcategoryRouter from './routes/blogCategoryRoute.js'
+import brandRouter from './routes/brandRoute.js'
 
 import cookieParser from 'cookie-parser'
 import morgan from 'morgan'
@@ -25,6 +28,9 @@ app.use(cookieParser())
 app.use('/api/user', authRouter)
 app.use('/api/product', productRouter)
 app.use('/api/blog', blogRouter)
+app.use('/api/product-category', pcategoryRouter)
+app.use('/api/blog-category', bcategoryRouter)
+app.use('/api/brand', brandRouter)
 
 app.listen(PORT, () => {
   console.log(`server is running on PORT ${PORT}`)

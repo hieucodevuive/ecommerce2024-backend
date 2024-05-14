@@ -31,7 +31,6 @@ export const getBlog = async(req, res, next) => {
     const blog = await Blog.findById(req.params.blogId)
       .populate('likes')
       .populate('dislikes')
-    console.log(blog)
     blog.numViews += 1
     blog.save()
     return res.status(200).json({status: 'success', blog: blog})
