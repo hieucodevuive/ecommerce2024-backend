@@ -127,6 +127,7 @@ export const logout = async (req, res, next) => {
 export const getAllUser = async (req, res, next) => {
   try {
     const allUsers = await User.find()
+      .populate('wishlist')
     const sanitizedUsers = allUsers.map(user => {
       const { password, ...res } = user._doc
       return res

@@ -12,6 +12,7 @@ export const findUserByEmail = async(email) => {
 export const findUserById = async(id) => {
   try {
     const user = await User.findOne({ _id: id })
+    .populate('wishlist')
     if (user) return user
   } catch (error) {
     throw new Error(error)

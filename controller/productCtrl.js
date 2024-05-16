@@ -1,4 +1,5 @@
 import Product from '../models/productModel.js'
+import User from '../models/userModel.js'
 import { productValidate } from '../validation/productVali.js'
 import slugify from 'slugify'
 import { validateMongoDbId } from '../utils/validateMongodbId.js'
@@ -94,5 +95,33 @@ export const deleteProduct = async (req, res, next) => {
     return res.status(200).json({ status: 'success', deleteProduct })
   } catch (error) {
     next(error)
+  }
+}
+
+export const addToWishlist = async (req, res, next) => {
+  const userId = req.user._id
+  const productId = req.params.productId
+  //TH1: product đã tồn tại trong wishlist
+  const user = await User.findById(userId)
+  const addedToWishlist =  user?.wishlist.find((objectId) => objectId.toString() === productId.toString())
+  if (addedToWishlist) {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        $pull: { wishlist: productId },
+      },
+      { new: true }
+    )
+    return res.json({ status: 'success', message: 'remove product from wishlist', user: user })
+  } else {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        $push: { wishlist: productId },
+      },
+      { new: true }
+    )
+    console.log(user);
+    return res.json({ status: 'success', message: 'add product from wishlist', user: user })
   }
 }
