@@ -6,7 +6,8 @@ import {
   getAllProduct,
   updateProduct,
   deleteProduct,
-  addToWishlist
+  addToWishlist,
+  rating
 } from '../controller/productCtrl.js'
 
 const router = express.Router()
@@ -16,6 +17,7 @@ router.get('/:productId', getProductDetail)
 router.get('/', getAllProduct)
 router.put('/update/:productId',authMiddleware, isAdmin, updateProduct)
 router.put('/addToWishList/:productId',authMiddleware, isAdmin, addToWishlist)
-router.delete('/delete/:productId',authMiddleware, isAdmin, deleteProduct)
+router.put('/addToWishList/:productId',authMiddleware, isAdmin, addToWishlist)
+router.put('/rating/:productId',authMiddleware, rating)
 
 export default router

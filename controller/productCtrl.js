@@ -4,6 +4,7 @@ import { productValidate } from '../validation/productVali.js'
 import slugify from 'slugify'
 import { validateMongoDbId } from '../utils/validateMongodbId.js'
 import { errorHandler } from '../utils/errorHandle.js'
+import { ObjectId } from 'mongodb'
 
 export const createProduct = async(req, res, next) => {
   //B1: check xem đã đăng nhập chưa và có phải là admin không
@@ -25,6 +26,7 @@ export const  getProductDetail = async (req, res, next) => {
   validateMongoDbId(req.params.productId)
   try {
     const product = await Product.findById(req.params.productId)
+      .populate('ratings.postedby')
     if (!product) return next(errorHandler(400, 'Product not found'))
     return res.status(200).json({ status: 'success', product: product})
   } catch (error) {
@@ -41,7 +43,6 @@ export const getAllProduct = async(req, res, next) => {
     const handleQueryPrice = (obj) => {
       let queryStr = JSON.stringify(obj)
       queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`)
-      console.log(queryStr)
       return JSON.parse(queryStr)
     }
     //Lọc các dựa trên cách trường
@@ -123,5 +124,71 @@ export const addToWishlist = async (req, res, next) => {
     )
     console.log(user);
     return res.json({ status: 'success', message: 'add product from wishlist', user: user })
+  }
+}
+
+export const rating = async (req, res, next) => {
+  const productId = req.params.productId
+  const userId = req.user._id
+  const { star, comment } = req.body
+  if (!star || !comment) return next(errorHandler(500, 'All fields are required'))
+  validateMongoDbId(productId)
+
+  try {
+    const product = await Product.findById(productId)
+    if (!product) return next(errorHandler(400, 'Product not found'))
+
+    const user = await User.findById(userId)
+    if (!user) return next(errorHandler(400, 'You need to login first'))
+
+    let alreadyRated = product.ratings.find(
+      (user) => user.postedby.toString() === userId.toString()
+    )
+
+    if (alreadyRated) {
+      const updateRating = await Product.updateOne(
+        {
+          ratings: { $elemMatch: alreadyRated },
+        },
+        {
+          $set: { "ratings.$.star": star, "ratings.$.comment": comment },
+        },
+        {
+          new: true,
+        }
+      )
+    } else {
+      const ratedProduct = await Product.findByIdAndUpdate({ _id: productId },
+        {
+          $push: {
+            ratings: {
+              star: star,
+              comment: comment,
+              postedby: user._id
+            }, 
+          },
+        },
+        {
+          new: true
+        }
+      )
+    }
+
+    const getallratings = await Product.findById(productId)
+    let totalRating = getallratings.ratings.length
+    let ratingsum = getallratings.ratings
+      .map((item) => item.star)
+      .reduce((prev, curr) => prev + curr, 0);
+    let averageRating = Math.round(ratingsum / totalRating*10)/10
+    let finalproduct = await Product.findByIdAndUpdate(
+      productId,
+      {
+        totalrating: totalRating,
+      },
+      { new: true }
+    )
+    return res.status(200).json({ status: 'success', finalproduct: finalproduct, averageRating: averageRating })
+  } catch (error) {
+    next(error)
   }
 }
