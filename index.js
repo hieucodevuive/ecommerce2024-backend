@@ -11,11 +11,20 @@ import pcategoryRouter from './routes/productCategoryRoute.js'
 import bcategoryRouter from './routes/blogCategoryRoute.js'
 import brandRouter from './routes/brandRoute.js'
 import couponRouter from './routes/couponRoute.js'
+import cartRouter from './routes/cartRoute.js'
 
 import cookieParser from 'cookie-parser'
 import morgan from 'morgan'
+import {v2 as cloudinary} from 'cloudinary'
 
 dotenv.config()
+
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SERCET,
+})
+
 await dbConnect()
 
 const PORT = process.env.PORT || 3000
@@ -33,6 +42,7 @@ app.use('/api/product-category', pcategoryRouter)
 app.use('/api/blog-category', bcategoryRouter)
 app.use('/api/brand', brandRouter)
 app.use('/api/coupon', couponRouter)
+app.use('/api/cart', cartRouter)
 
 app.listen(PORT, () => {
   console.log(`server is running on PORT ${PORT}`)

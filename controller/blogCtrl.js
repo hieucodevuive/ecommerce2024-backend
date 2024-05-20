@@ -5,6 +5,9 @@ import { errorHandler } from '../utils/errorHandle.js'
 import { validateMongoDbId } from '../utils/validateMongodbId.js'
 import { blogValidate } from '../validation/blogVali.js'
 
+import { cloudinaryUploadImg } from '../utils/cloudinary.js'
+
+
 export const createBlog = async(req, res, next) => {
   try {
     const validateData = await blogValidate.validateAsync(req.body)
@@ -161,6 +164,29 @@ export const dislikeBlog = async (req, res, next) => {
       )
       return res.json({ status: 'success', message: 'disliked'})
     }
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const uploadImage = async (req, res, next) => {
+  const blogId = req.params.blogId
+  validateMongoDbId(blogId)
+  try {
+    const uploaded = (path) => cloudinaryUploadImg(path, 'images')
+    const urls = []
+    const files = req.files
+    for (const file of files) {
+      const { path } = file
+      const newpath = await uploaded(path)
+      urls.push(newpath)
+    }
+    const findBlog = await Blog.findByIdAndUpdate({ _id: blogId }, {
+      images: urls.map(file => {
+        return file
+      })
+    }, { new: true })
+    res.status(200).json({ status: 'success', blog: findBlog })
   } catch (error) {
     next(error)
   }

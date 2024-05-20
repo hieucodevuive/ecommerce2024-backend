@@ -4,7 +4,8 @@ import { productValidate } from '../validation/productVali.js'
 import slugify from 'slugify'
 import { validateMongoDbId } from '../utils/validateMongodbId.js'
 import { errorHandler } from '../utils/errorHandle.js'
-import { ObjectId } from 'mongodb'
+import { cloudinaryUploadImg } from '../utils/cloudinary.js'
+import fs from 'fs'
 
 export const createProduct = async(req, res, next) => {
   //B1: check xem đã đăng nhập chưa và có phải là admin không
@@ -188,6 +189,35 @@ export const rating = async (req, res, next) => {
       { new: true }
     )
     return res.status(200).json({ status: 'success', finalproduct: finalproduct, averageRating: averageRating })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const uploadImage = async (req, res, next) => {
+  const productId = req.params.productId
+  validateMongoDbId(productId)
+  try {
+    const uploaded = (path) => cloudinaryUploadImg(path, 'images')
+    const urls = []
+    const files = req.files
+    for (const file of files) {
+      const { path } = file
+      console.log('🚀 ~ uploadImage ~ path:', path)
+      const newpath = await uploaded(path)
+      urls.push(newpath)
+      try {
+        fs.unlinkSync(path)
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    const findProduct = await Product.findByIdAndUpdate({ _id: productId }, {
+      images: urls.map(file => {
+        return file
+      })
+    }, { new: true })
+    res.status(200).json({ status: 'success', product: findProduct })
   } catch (error) {
     next(error)
   }

@@ -79,6 +79,49 @@ export const loginUser = async (req, res, next) => {
   }
 }
 
+//adnim login
+export const loginAdmin = async (req, res, next) => {
+  try {
+    const validateData = await loginValidate.validateAsync(req.body)
+    const { email, password } = validateData
+    //Kiểm tra xem user có tồn tại hay không
+    const findAdmin = await findUserByEmail(email)
+    if (findAdmin.role !== 'admin') return next(errorHandler(400, 'You are not admin'))
+    if (!findAdmin) return next(errorHandler(500, 'Admin not found'))
+    //Nếu tồn tại user và mật khẩu chính xác, isPasswordMatched là một method được tạo ra trong userScheemer
+    if (findAdmin && await findAdmin.isPasswordMatched(password)) {
+      //Tọa ra refreshToken rồi cập nhật trong db
+      const refreshToken = await generateRefreshToken(findAdmin?._id)
+      const updateUser = await User.findByIdAndUpdate(findAdmin?._id, {
+        refreshToken: refreshToken
+      }, { new: true })
+
+      //trả về refreshToken lên cookie
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        maxAge: 71 * 60 * 60 * 1000
+      })
+
+      res.status(200).json({
+        status: 'success',
+        user: {
+          _id: findAdmin?._id,
+          firstname: findAdmin?.firstname,
+          lastname: findAdmin?.lastname,
+          email: findAdmin?.email,
+          mobile: findAdmin?.mobile,
+          //tạo gửi lên client 1 cái token
+          token: generateToken(findAdmin?._id)
+        }
+      })
+    } else {
+      return next(errorHandler(500, 'Password is incorrect!'))
+    }
+  } catch (error) {
+    next(error)
+  }
+}
+
 // handle refresh token
 export const handleRefreshToken = async (req, res, next) => {
   const cookie = req.cookies
@@ -295,4 +338,37 @@ export const resetPassword = async(req, res, next) => {
   } catch (error) {
     next(error)
   }
+}
+
+export const getWishlist = async (req, res, next) => {
+  const { _id } = req.user
+  validateMongoDbId(_id)
+  try {
+    const user = await User.findOne(_id)
+      .populate('wishlist')
+    const userWishlist = user.wishlist
+    res.status(200).json({ status: 'success', wishlist: userWishlist })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const saveAddress = async (req, res, next) => {
+  const { _id } = req.user
+  validateMongoDbId(_id)
+  try {
+    const updateUser = await User.findByIdAndUpdate(_id, {
+      address: req?.body?.address,
+    },
+      {
+        new: true
+      })
+    res.status(200).json({
+      status: 'success',
+      user: updateUser
+    })
+  } catch (error) {
+    next(error)
+  }
+  
 }
