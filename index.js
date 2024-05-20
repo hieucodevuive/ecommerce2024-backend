@@ -12,6 +12,7 @@ import bcategoryRouter from './routes/blogCategoryRoute.js'
 import brandRouter from './routes/brandRoute.js'
 import couponRouter from './routes/couponRoute.js'
 import cartRouter from './routes/cartRoute.js'
+import orderRouter from './routes/orderRoute.js'
 
 import cookieParser from 'cookie-parser'
 import morgan from 'morgan'
@@ -43,6 +44,7 @@ app.use('/api/blog-category', bcategoryRouter)
 app.use('/api/brand', brandRouter)
 app.use('/api/coupon', couponRouter)
 app.use('/api/cart', cartRouter)
+app.use('/api/order', orderRouter)
 
 app.listen(PORT, () => {
   console.log(`server is running on PORT ${PORT}`)
