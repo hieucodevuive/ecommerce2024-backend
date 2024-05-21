@@ -8,7 +8,8 @@ import {
   deleteProduct,
   addToWishlist,
   rating,
-  uploadImage
+  uploadImage,
+  deleteImage
 } from '../controller/productCtrl.js'
 
 import {
@@ -21,7 +22,8 @@ const router = express.Router()
 router.post('/create',authMiddleware, isAdmin, createProduct)
 router.get('/:productId', getProductDetail)
 router.get('/', getAllProduct)
-router.put('/upload-images/:productId',authMiddleware, isAdmin, uploadPhoto.array('images', 10), productImgResize, uploadImage)
+router.put('/upload-images',authMiddleware, isAdmin, uploadPhoto.array('images', 10), productImgResize, uploadImage)
+router.delete('/delete-images/:id',authMiddleware, isAdmin, deleteImage)
 router.put('/update/:productId',authMiddleware, isAdmin, updateProduct)
 router.delete('/delete/:productId',authMiddleware, isAdmin, addToWishlist)
 router.put('/addToWishList/:productId',authMiddleware, isAdmin, deleteProduct)

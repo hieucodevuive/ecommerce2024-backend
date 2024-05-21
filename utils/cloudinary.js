@@ -18,11 +18,15 @@ export const cloudinaryUploadImg = async (file) => {
 
 export const cloudinaryDeleteImg = async (file) => {
   return new Promise((resolve, reject) => {
-    cloudinary.uploader.destroy(file, { resource_type: 'auto' }, (error, result) => {
+    cloudinary.uploader.destroy(file, (error, result) => {
       if (error) {
         reject(error)
       } else {
-        resolve(result)
+        resolve({
+          url: result.secure_url,
+          asset_id: result.asset_id,
+          public_id: result.public_id,
+        })
       }
     })
   })

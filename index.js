@@ -13,6 +13,8 @@ import brandRouter from './routes/brandRoute.js'
 import couponRouter from './routes/couponRoute.js'
 import cartRouter from './routes/cartRoute.js'
 import orderRouter from './routes/orderRoute.js'
+import colorRouter from './routes/colorRoute.js'
+import enqRouter from './routes/enqRoute.js'
 
 import cookieParser from 'cookie-parser'
 import morgan from 'morgan'
@@ -45,6 +47,8 @@ app.use('/api/brand', brandRouter)
 app.use('/api/coupon', couponRouter)
 app.use('/api/cart', cartRouter)
 app.use('/api/order', orderRouter)
+app.use('/api/color', colorRouter)
+app.use('/api/enq', enqRouter)
 
 app.listen(PORT, () => {
   console.log(`server is running on PORT ${PORT}`)

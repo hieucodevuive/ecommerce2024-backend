@@ -67,6 +67,7 @@ export const loginUser = async (req, res, next) => {
           lastname: findUser?.lastname,
           email: findUser?.email,
           mobile: findUser?.mobile,
+          role: findUser?.role,
           //tạo gửi lên client 1 cái token
           token: generateToken(findUser?._id)
         }

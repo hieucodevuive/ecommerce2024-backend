@@ -4,7 +4,7 @@ import { productValidate } from '../validation/productVali.js'
 import slugify from 'slugify'
 import { validateMongoDbId } from '../utils/validateMongodbId.js'
 import { errorHandler } from '../utils/errorHandle.js'
-import { cloudinaryUploadImg } from '../utils/cloudinary.js'
+import { cloudinaryUploadImg, cloudinaryDeleteImg } from '../utils/cloudinary.js'
 import fs from 'fs'
 
 export const createProduct = async(req, res, next) => {
@@ -195,15 +195,12 @@ export const rating = async (req, res, next) => {
 }
 
 export const uploadImage = async (req, res, next) => {
-  const productId = req.params.productId
-  validateMongoDbId(productId)
   try {
     const uploaded = (path) => cloudinaryUploadImg(path, 'images')
     const urls = []
     const files = req.files
     for (const file of files) {
       const { path } = file
-      console.log('🚀 ~ uploadImage ~ path:', path)
       const newpath = await uploaded(path)
       urls.push(newpath)
       try {
@@ -212,12 +209,20 @@ export const uploadImage = async (req, res, next) => {
         console.log(error)
       }
     }
-    const findProduct = await Product.findByIdAndUpdate({ _id: productId }, {
-      images: urls.map(file => {
-        return file
-      })
-    }, { new: true })
-    res.status(200).json({ status: 'success', product: findProduct })
+    const images =  urls.map(file => {
+      return file
+    })
+   return res.status(200).json(images)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const deleteImage = async (req, res, next) => {
+  const { id } = req.params
+  try {
+    const deleted = cloudinaryDeleteImg(id, 'images')
+    return res.status(200).json({ message: 'Deleted' })
   } catch (error) {
     next(error)
   }
